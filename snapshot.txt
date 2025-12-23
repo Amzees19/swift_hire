@@ -1,0 +1,87 @@
+.github/ – GitHub configs (Copilot instructions, etc.).
+app/ – FastAPI web app package.
+api.py – creates FastAPI() and includes routers; startup calls init_db.
+area_groups.py – region/town constants.
+layout.py – shared HTML layout/CSS + render_page.
+auth_utils.py – session cookie helpers, get_current_user.
+routes/ – route modules:
+public.py – home page, subscribe, health check.
+auth.py – login/logout.
+dashboard.py – user dashboard.
+admin.py – jobs list, subscriptions list, deactivate.
+core/
+database.py – all SQLite access (init, locations, jobs, subscriptions, users, sessions).
+worker/
+amazon_engine.py – Playwright scraper to fetch jobs.
+main.py – background job alert worker; matches jobs to subscriptions, sends emails.
+scripts/ – helper/diagnostic scripts using core.database:
+debug.py, debug_db.py, debug_jobs.py – inspect DB/tables/data.
+reset_jobs.py – clear jobs table.
+test_sessions.py – quick session/user sanity check.
+test_insert_jobs.py – insert fake jobs for testing get_new_jobs.
+main.py (root) – entry point to run the worker (python main.py).
+jobs.db – SQLite database file.
+amazon_project.py, monetisation.py, progress_comment_file.py – legacy/notes (not part of the new app wiring).
+__pycache__/ – Python bytecode caches (safe to ignore/delete).
+Run web: python -m uvicorn app.api:app --reload
+
+# python -m dotenv run -- python -m uvicorn app.api:app --reload
+
+--To send emails or alerts "python -m dotenv run -- python -m worker.main
+2
+
+#To  run live system to send emails, Amazon USA 
+python -m dotenv run -- python -m worker.main_us
+
+#To run UK live systems 
+
+
+#To run database -> python scripts/db_shell.py "SELECT * FROM users"
+
+
+#Run migration scripts -> python scripts/migrate_activation_code.py
+
+#Local machine deploy requires docker starting  -- flyctl deploy --local-only
+#Remote build "flyctl deploy"
+
+
+#huddiroon@gmail.com
+
+
+Command to start remote machine 
+
+#flyctl machine run registry.fly.io/swifthire-frosty-river-6463:deployment-01KD116CRPSEAH1537YFHQ11PX `
+  -a swifthire-frosty-river-6463 `
+  --command "python -m worker.main_us"
+
+
+
+#To check status of fly.io --flyctl status -a swifthire-frosty-river-6463
+#Start Machine "flyctl deploy -a swifthire-frosty-river-6463" 
+
+#Start Worker  -- flyctl scale count worker_us=1 -a swifthire-frosty-river-6463
+
+#To make app run all the time -- flyctl scale count app=1 -a swifthire-frosty-river-6463
+2
+
+-- To check logs flyctl logs -a swifthire-frosty-river-6463
+
+--Manaul start flyctl machines start d8d332da9d9458 -a swifthire-frosty-river-6463
+
+# To connect to remote console ---flyctl ssh console --app swifthire-frosty-river-6463
+
+
+-Three serious issues:
+ 1- User aliblizzard2@gmail.com registered on live system but we have verified 
+    this user details are not stored on local machine or remote machine. We need to investigate 
+    what is happening. We cannot keep guessing x,y,z.
+2- The email notification are not being sent to anyone, i can manually 
+confirm there are jobs but they are system there is no job.
+
+##################################################
+
+#A) scrape outside Fly + push jobs into Fly
+
+#B) migrate to Postgres + run worker in US region
+
+#C) add a proxy to Playwright on Fly

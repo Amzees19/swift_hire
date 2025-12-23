@@ -1,0 +1,4 @@
+"""
+Amazon alerts FastAPI package.
+"""
+
