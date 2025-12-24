@@ -7,7 +7,7 @@ WORKDIR /app
 
 RUN python -m venv .venv
 COPY requirements.web.txt ./
-RUN .venv/bin/pip install --no-cache-dir -r requirements.web.txt
+RUN .venv/bin/pip install --no-cache-dir -r requirements.txt
 
 FROM python:3.11.9-slim
 
