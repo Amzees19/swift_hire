@@ -14,7 +14,6 @@ kill_timeout = 120
 [processes]
   app = "sh /app/start_app.sh"
 
-
 [deploy]
   strategy = 'rolling'
   wait_timeout = '10m'

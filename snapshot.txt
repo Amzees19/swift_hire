@@ -85,3 +85,40 @@ confirm there are jobs but they are system there is no job.
 #B) migrate to Postgres + run worker in US region
 
 #C) add a proxy to Playwright on Fly
+
+
+
+####################################
+
+Future “standard checklist” commands (PowerShell)
+1) Status + machines
+fly status --app swift-hire
+fly machines list --app swift-hire
+
+2) Logs (web app health)
+fly logs --app swift-hire
+
+3) SSH into the VM (now that it’s running)
+fly ssh console --app swift-hire
+
+Confirm worker is NOT running anymore (inside the VM)
+
+Once you’re in the VM shell:
+
+A) Check for any worker process
+for p in /proc/[0-9]*; do
+  cmd="$(tr '\0' ' ' < "$p/cmdline" 2>/dev/null || true)"
+  echo "$cmd" | grep -q "worker.main_us" && echo "FOUND worker.main_us PID=${p#/proc/}"
+done
+
+
+If nothing prints → worker not running.
+
+B) Also check for uvicorn (should be running)
+for p in /proc/[0-9]*; do
+  cmd="$(tr '\0' ' ' < "$p/cmdline" 2>/dev/null || true)"
+  echo "$cmd" | grep -q "uvicorn app.api:app" && echo "FOUND uvicorn PID=${p#/proc/}"
+done
+
+C) Confirm start_app.sh doesn’t start the worker
+sed -n '1,120p' /app/start_app.sh
