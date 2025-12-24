@@ -6,7 +6,7 @@ ENV PYTHONUNBUFFERED=1 \
 WORKDIR /app
 
 RUN python -m venv .venv
-COPY requirements.web.txt ./
+COPY requirements.txt ./
 RUN .venv/bin/pip install --no-cache-dir -r requirements.txt
 
 FROM python:3.11.9-slim
