@@ -27,4 +27,4 @@ COPY . .
 # Fix Windows CRLF and ensure executable
 RUN sed -i 's/\r$//' /app/start_app.sh && chmod +x /app/start_app.sh
 
-CMD ["/app/start_app.sh"]
+CMD ["sh", "/app/start_app.sh"]

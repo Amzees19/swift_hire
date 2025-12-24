@@ -12,7 +12,8 @@ kill_timeout = 120
 [build]
 
 [processes]
-  app = '/app/start_app.sh'
+  app = "sh /app/start_app.sh"
+
 
 [deploy]
   strategy = 'rolling'

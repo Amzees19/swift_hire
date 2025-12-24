@@ -17,5 +17,4 @@ export DATABASE_PATH="${DATABASE_PATH:-/data/jobs.db}"
 # Run only the web app
 exec /app/.venv/bin/uvicorn app.api:app --host 0.0.0.0 --port 8000
 
-(Get-Content .\start_app.sh) -replace "`r","" | Set-Content .\start_app.sh
 
