@@ -1,0 +1,27 @@
+name: Fly Deploy
+
+on:
+  push:
+    branches: [ "main" ]
+
+concurrency:
+  group: deploy-group
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+      
+      - name: Show environment variables
+        run: |
+          echo "Environment Variables:"
+          echo "FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}"
+      
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+      - name: Deploy to Fly
+        run: flyctl deploy --remote-only --app swift-hire
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
