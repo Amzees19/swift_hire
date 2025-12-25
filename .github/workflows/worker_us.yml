@@ -26,6 +26,8 @@ jobs:
         env:
           TEST_MODE: "false"
           PLAYWRIGHT_HEADLESS: "true"
+          env:
+
           ADMIN_EMAIL: ${{secrets.ADMIN_EMAIL}}
           ADMIN_PASSWORD: ${{secrets.ADMIN_PASSWORD}}
           EMAIL_USER: ${{ secrets.EMAIL_USER }}
@@ -34,4 +36,6 @@ jobs:
           SMTP_SERVER: ${{ secrets.SMTP_SERVER }}
           SMTP_PORT: ${{ secrets.SMTP_PORT }}
           DATABASE_PATH: ${{ secrets.DATABASE_PATH }}  
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
 
