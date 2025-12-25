@@ -133,7 +133,12 @@ async def fetch_jobs(headless: bool = False) -> List[Dict]:
             page = await context.new_page()
 
             print("[engine_us] Loading page...")
-            await page.goto(SEARCH_URL, wait_until="domcontentloaded")
+            response = await page.goto(SEARCH_URL, wait_until="domcontentloaded")
+            try:
+                status = response.status if response else "no-response"
+            except Exception:
+                status = "unknown"
+            print(f"[engine_us] Page status: {status}")
 
             try:
                 await page.wait_for_timeout(3000)
@@ -212,6 +217,11 @@ async def fetch_jobs(headless: bool = False) -> List[Dict]:
             jobs = _parse_jobs_from_text(full_text)
             print(f"[engine_us] Parsed {len(jobs)} job(s) from text.")
             if not jobs:
+                try:
+                    title = await page.title()
+                except Exception:
+                    title = "unknown"
+                print(f"[engine_us] Page title: {title}")
                 print("[engine_us] Sample page text (first 800 chars):")
                 print(full_text[:800])
 
