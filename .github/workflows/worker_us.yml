@@ -26,11 +26,12 @@ jobs:
         env:
           TEST_MODE: "false"
           PLAYWRIGHT_HEADLESS: "true"
-          ADMIN_EMAIL: ${{vars.ADMIN_EMAIL}}
-          ADMIN_PASSWORD: ${{vars.ADMIN_PASSWORD}}
-          EMAIL_USER: ${{ vars.EMAIL_USER }}
-          EMAIL_PASSWORD: ${{ vars.EMAIL_PASSWORD }}
-          EMAIL_FROM: ${{ vars.EMAIL_FROM }}
-          SMTP_SERVER: ${{ vars.SMTP_SERVER }}
-          SMTP_PORT: ${{ vars.SMTP_PORT }}
-          DATABASE_PATH: ${{ vars.DATABASE_PATH }}  
+          ADMIN_EMAIL: ${{secrets.ADMIN_EMAIL}}
+          ADMIN_PASSWORD: ${{secrets.ADMIN_PASSWORD}}
+          EMAIL_USER: ${{ secrets.EMAIL_USER }}
+          EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+          EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
+          SMTP_SERVER: ${{ secrets.SMTP_SERVER }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          DATABASE_PATH: ${{ secrets.DATABASE_PATH }}  
+
