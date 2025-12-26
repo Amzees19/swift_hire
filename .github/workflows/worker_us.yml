@@ -31,6 +31,9 @@ jobs:
       - name: Show outbound IP
         run: |
           curl -s https://api.ipify.org
+      - name: Show CloudFront response headers
+        run: |
+          curl -s -D - -o /dev/null https://hiring.amazon.com/app#/jobSearch
       - name: Run US worker once
         run: |
           python -m worker.main_us
