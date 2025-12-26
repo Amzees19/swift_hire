@@ -122,3 +122,15 @@ done
 
 C) Confirm start_app.sh doesn’t start the worker
 sed -n '1,120p' /app/start_app.sh
+
+
+
+Restart Machine ---fly machines start 7849205ae49d28 --app swift-hire
+
+#Start db flyctl postgres connect -a swift-hire-db
+# Set passowrd in db: ALTER USER swift_hire WITH PASSWORD 'Swanseaballs98@';
+\q
+
+# Establish passowrd-- flyctl secrets set -a swift-hire DATABASE_URL="postgres://swift_hire:Swanseaballs98%40@swift-hire-db.flycast:5432/swift_hire?sslmode=disable"
+
+---db logs
