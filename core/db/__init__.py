@@ -1,7 +1,7 @@
 """
 Convenience re-exports for database helpers.
 """
-from core.db.base import database_path, get_conn
+from core.db.base import get_conn
 from core.db.schema import (
     DEFAULT_LOCATIONS,
     init_db,
@@ -56,7 +56,6 @@ from core.db.jobs import (
 )
 
 __all__ = [
-    "database_path",
     "get_conn",
     "DEFAULT_LOCATIONS",
     "init_db",

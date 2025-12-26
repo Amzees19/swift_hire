@@ -3,11 +3,10 @@ Subscription storage helpers (data-level only).
 """
 from __future__ import annotations
 
-import sqlite3
 from datetime import datetime
 from typing import Dict, List
 
-from core.db.base import database_path
+from core.db.base import get_conn
 
 
 def add_subscription(
@@ -18,7 +17,7 @@ def add_subscription(
     user_id: int | None = None,
 ) -> None:
     """Add a new subscription (active=1 by default)."""
-    conn = sqlite3.connect(database_path)
+    conn = get_conn()
     cur = conn.cursor()
     now = datetime.utcnow().isoformat(timespec="seconds")
     email_normalized = (email or "").strip().lower()
@@ -41,7 +40,7 @@ def activate_latest_inactive_subscription(email: str) -> bool:
     if not email_normalized:
         return False
 
-    conn = sqlite3.connect(database_path)
+    conn = get_conn()
     cur = conn.cursor()
     cur.execute(
         """
@@ -50,7 +49,7 @@ def activate_latest_inactive_subscription(email: str) -> bool:
         WHERE id = (
             SELECT id FROM subscriptions
             WHERE lower(email) = lower(?) AND active = 0
-            ORDER BY datetime(created_at) DESC, id DESC
+            ORDER BY created_at DESC, id DESC
             LIMIT 1
         )
         """,
@@ -64,8 +63,7 @@ def activate_latest_inactive_subscription(email: str) -> bool:
 
 def get_active_subscriptions() -> List[Dict]:
     """Return all active subscriptions as a list of dicts."""
-    conn = sqlite3.connect(database_path)
-    conn.row_factory = sqlite3.Row
+    conn = get_conn()
     cur = conn.cursor()
 
     cur.execute(
@@ -84,8 +82,7 @@ def get_active_subscriptions() -> List[Dict]:
 
 def get_subscriptions_for_email(email: str) -> List[Dict]:
     """Return all subscriptions for a given email."""
-    conn = sqlite3.connect(database_path)
-    conn.row_factory = sqlite3.Row
+    conn = get_conn()
     cur = conn.cursor()
 
     cur.execute(
@@ -93,7 +90,7 @@ def get_subscriptions_for_email(email: str) -> List[Dict]:
         SELECT id, user_id, email, preferred_location, job_type, created_at, active, updated_once, needs_pref_update, last_deactivated_at
         FROM subscriptions
         WHERE lower(email) = lower(?)
-        ORDER BY datetime(created_at) DESC, id DESC
+        ORDER BY created_at DESC, id DESC
         """,
         (email.strip(),),
     )
@@ -105,7 +102,7 @@ def get_subscriptions_for_email(email: str) -> List[Dict]:
 
 def deactivate_subscription(sub_id: int) -> None:
     """Mark a subscription as inactive (unsubscribe)."""
-    conn = sqlite3.connect(database_path)
+    conn = get_conn()
     cur = conn.cursor()
 
     cur.execute("UPDATE subscriptions SET active = 0 WHERE id = ?", (sub_id,))
@@ -118,7 +115,6 @@ def update_subscription_for_user(sub_id: int, email: str, preferred_location: st
     """
     Update a subscription owned by email.
     - Enforce max 3 locations (semicolon separated).
-    - Enforce max 3 locations (semicolon separated).
     - Allow updates any time for the owner.
     - After update, set updated_once=1, keep it active.
     Returns True if a row was updated.
@@ -126,7 +122,7 @@ def update_subscription_for_user(sub_id: int, email: str, preferred_location: st
     parts = [p.strip() for p in preferred_location.split(";") if p.strip()]
     trimmed = "; ".join(parts[:3])
 
-    conn = sqlite3.connect(database_path)
+    conn = get_conn()
     cur = conn.cursor()
     cur.execute(
         """
@@ -144,15 +140,14 @@ def update_subscription_for_user(sub_id: int, email: str, preferred_location: st
 
 def get_deleted_subscriptions(limit: int = 100) -> List[Dict]:
     """Return recently deleted subscriptions (archive view)."""
-    conn = sqlite3.connect(database_path)
-    conn.row_factory = sqlite3.Row
+    conn = get_conn()
     cur = conn.cursor()
     try:
         cur.execute(
             """
             SELECT id, subscription_id, user_id, email, preferred_location, job_type, created_at, active, deleted_at
             FROM deleted_subscriptions
-            ORDER BY datetime(deleted_at) DESC, id DESC
+            ORDER BY deleted_at DESC, id DESC
             LIMIT ?
             """,
             (int(limit),),

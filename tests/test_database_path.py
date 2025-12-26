@@ -1,5 +1,5 @@
 from core.db import base
 
 
-def test_database_path_points_to_jobs_db():
-    assert base.database_path.name == "jobs.db"
+def test_database_url_is_postgres():
+    assert base.database_url.startswith(("postgres://", "postgresql://"))

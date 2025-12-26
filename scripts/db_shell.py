@@ -1,54 +1,45 @@
 """
-Quick helper to run a SQLite query against jobs.db.
+Quick helper to run a query against Postgres (DATABASE_URL required).
 
 Usage:
-  python scripts/db_shell.py                          # list tables
-  python scripts/db_shell.py "SELECT * FROM users"    # run a custom query
-  DATABASE_PATH=/data/jobs.db python scripts/db_shell.py "SELECT COUNT(*) FROM users"
+  DATABASE_URL=... python scripts/db_shell.py                          # list tables
+  DATABASE_URL=... python scripts/db_shell.py "SELECT * FROM users"    # run a custom query
 """
 from __future__ import annotations
 
 import os
-import sqlite3
 import sys
-from pathlib import Path
+
+import psycopg
+from psycopg.rows import dict_row
+
+def resolve_database_url() -> str:
+    url = os.getenv("DATABASE_URL")
+    if not url:
+        raise SystemExit("DATABASE_URL must be set for Postgres usage")
+    if url.startswith("postgres://") or url.startswith("postgresql://"):
+        return url
+    raise SystemExit("DATABASE_URL must start with postgres:// or postgresql://")
 
 
-def resolve_db_path() -> Path:
-    # Explicit override always wins
-    env_path = os.getenv("DATABASE_PATH")
-    if env_path:
-        return Path(env_path).expanduser()
-
-    # On Fly, default to the mounted volume
-    if os.getenv("FLY_APP_NAME"):
-        return Path("/data/jobs.db")
-
-    # Local dev default: repo root jobs.db (../jobs.db from scripts/)
-    return Path(__file__).resolve().parent.parent / "jobs.db"
-
-
-DB_PATH = resolve_db_path()
+DATABASE_URL = resolve_database_url()
 
 
 def main() -> None:
     query = " ".join(sys.argv[1:]).strip()
     if not query:
-        query = "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name;"
+        query = (
+            "SELECT tablename AS name "
+            "FROM pg_tables WHERE schemaname='public' "
+            "ORDER BY tablename"
+        )
 
-    if not DB_PATH.exists():
-        raise SystemExit(f"DB file not found: {DB_PATH}")
-
-    # Show DB path so there's never any ambiguity
-    print(f"Using DB: {DB_PATH}", file=sys.stderr)
+    print("Using DB: postgres (DATABASE_URL)", file=sys.stderr)
 
     try:
-        with sqlite3.connect(str(DB_PATH)) as conn:
-            conn.row_factory = sqlite3.Row
+        with psycopg.connect(DATABASE_URL, row_factory=dict_row) as conn:
             cur = conn.cursor()
             cur.execute(query)
-
-            # If the statement returns columns, it's a result set
             if cur.description is not None:
                 rows = cur.fetchall()
                 for row in rows:
@@ -56,8 +47,6 @@ def main() -> None:
             else:
                 conn.commit()
                 print(f"OK ({cur.rowcount} row(s) affected)")
-    except sqlite3.Error as exc:
-        raise SystemExit(f"SQLite error: {exc}") from exc
     except Exception as exc:
         raise SystemExit(f"Error running query: {exc}") from exc
 

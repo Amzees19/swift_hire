@@ -4,11 +4,10 @@ Session storage helpers.
 from __future__ import annotations
 
 import secrets
-import sqlite3
 from datetime import datetime, timedelta
 from typing import Dict, Optional
 
-from core.db.base import database_path
+from core.db.base import get_conn
 
 SESSION_TIMEOUT_MINUTES = 30  # inactivity timeout
 
@@ -19,7 +18,7 @@ def create_session(user_id: int) -> str:
     now = datetime.utcnow()
     expires = now + timedelta(minutes=SESSION_TIMEOUT_MINUTES)
 
-    conn = sqlite3.connect(database_path)
+    conn = get_conn()
     cur = conn.cursor()
     cur.execute(
         """
@@ -45,7 +44,7 @@ def delete_session(session_id: str) -> None:
     if not session_id:
         return
 
-    conn = sqlite3.connect(database_path)
+    conn = get_conn()
     cur = conn.cursor()
     cur.execute("DELETE FROM sessions WHERE id = ?", (session_id,))
     conn.commit()
@@ -61,8 +60,7 @@ def get_session(session_id: str) -> Optional[Dict]:
     if not session_id:
         return None
 
-    conn = sqlite3.connect(database_path)
-    conn.row_factory = sqlite3.Row
+    conn = get_conn()
     cur = conn.cursor()
     cur.execute(
         """
@@ -100,7 +98,7 @@ def touch_session(session_id: str) -> None:
     now = datetime.utcnow()
     new_expires = now + timedelta(minutes=SESSION_TIMEOUT_MINUTES)
 
-    conn = sqlite3.connect(database_path)
+    conn = get_conn()
     cur = conn.cursor()
     cur.execute(
         """

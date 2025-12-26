@@ -3,11 +3,10 @@ Password reset token storage.
 """
 from __future__ import annotations
 
-import sqlite3
 from datetime import datetime, timedelta
 from typing import Dict, Optional
 
-from core.db.base import database_path
+from core.db.base import get_conn
 
 RESET_TOKEN_MINUTES = 60
 
@@ -19,7 +18,7 @@ def create_password_reset_token(user_id: int) -> str:
     now = datetime.utcnow()
     expires = now + timedelta(minutes=RESET_TOKEN_MINUTES)
 
-    conn = sqlite3.connect(database_path)
+    conn = get_conn()
     cur = conn.cursor()
     # Invalidate any existing tokens for this user
     cur.execute("DELETE FROM password_reset_tokens WHERE user_id = ?", (user_id,))
@@ -44,8 +43,7 @@ def get_password_reset_token(token: str) -> Optional[Dict]:
     if not token:
         return None
 
-    conn = sqlite3.connect(database_path)
-    conn.row_factory = sqlite3.Row
+    conn = get_conn()
     cur = conn.cursor()
     cur.execute(
         """
@@ -83,11 +81,16 @@ def get_password_reset_token(token: str) -> Optional[Dict]:
 def mark_reset_token_used(token: str) -> None:
     if not token:
         return
-    conn = sqlite3.connect(database_path)
+    conn = get_conn()
     cur = conn.cursor()
     cur.execute("SELECT user_id FROM password_reset_tokens WHERE token = ?", (token,))
     row = cur.fetchone()
-    user_id = row[0] if row else None
+    if not row:
+        user_id = None
+    elif isinstance(row, dict):
+        user_id = row.get("user_id")
+    else:
+        user_id = row[0]
     cur.execute(
         "UPDATE password_reset_tokens SET used_at=? WHERE token=?",
         (datetime.utcnow().isoformat(timespec="seconds"), token),

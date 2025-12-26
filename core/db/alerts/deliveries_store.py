@@ -5,9 +5,8 @@ This records which jobs were matched for a specific subscription/user, and wheth
 """
 from __future__ import annotations
 
-import sqlite3
 from datetime import datetime
-from typing import Dict, Iterable, List, Optional
+from typing import Dict, Iterable, List
 
 from core.db.base import get_conn
 
@@ -36,16 +35,16 @@ def create_alert_deliveries(
         try:
             cur.execute(
                 """
-                INSERT OR IGNORE INTO alert_deliveries
+                INSERT INTO alert_deliveries
                   (user_id, subscription_id, job_id, status, created_at, sent_at, error)
                 VALUES (?, ?, ?, 'queued', ?, NULL, NULL)
+                ON CONFLICT (subscription_id, job_id) DO NOTHING
                 """,
                 (user_id, subscription_id, job_id, now),
             )
             if cur.rowcount:
                 inserted.append(job_id)
-        except sqlite3.OperationalError:
-            # If table doesn't exist yet for some reason, don't crash callers.
+        except Exception:
             continue
 
     conn.commit()
@@ -127,12 +126,12 @@ def get_alert_deliveries_for_user(*, user_id: int, limit: int = 200) -> List[Dic
             FROM alert_deliveries ad
             JOIN jobs j ON j.id = ad.job_id
             WHERE ad.user_id = ?
-            ORDER BY datetime(ad.created_at) DESC, ad.id DESC
+            ORDER BY ad.created_at DESC, ad.id DESC
             LIMIT ?
             """,
             (user_id, int(limit)),
         )
-    except sqlite3.OperationalError:
+    except Exception:
         conn.close()
         return []
 
@@ -147,8 +146,7 @@ def delete_alert_deliveries_for_user(user_id: int) -> None:
     try:
         cur.execute("DELETE FROM alert_deliveries WHERE user_id=?", (user_id,))
         conn.commit()
-    except sqlite3.OperationalError:
+    except Exception:
         pass
     finally:
         conn.close()
-
