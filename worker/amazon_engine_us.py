@@ -31,9 +31,6 @@ def _parse_jobs_from_text(text: str) -> List[Dict]:
     jobs: List[Dict] = []
 
     joined = "\n".join(lines)
-    m = re.search(r"(\d+)\s+job(?:s)?\s+found", joined, re.IGNORECASE)
-    if not m:
-        return []
 
     for i, line in enumerate(lines):
         if "Type:" not in line:
