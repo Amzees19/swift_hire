@@ -2,7 +2,7 @@ name: Worker US (Scraping)
 
 on:
   schedule:
-    - cron: "0 * * * *"  # Run every hour, adjust as needed
+    - cron: "*/3 * * * *"  # Run every 3 minutes
   workflow_dispatch:  # Allows manual trigger
 
 jobs:
@@ -42,4 +42,3 @@ jobs:
           SMTP_SERVER: ${{ secrets.SMTP_SERVER }}
           SMTP_PORT: ${{ secrets.SMTP_PORT }}
           DATABASE_URL: ${{ secrets.DATABASE_URL_PROXY }}
-
