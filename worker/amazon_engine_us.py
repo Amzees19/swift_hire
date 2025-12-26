@@ -211,16 +211,17 @@ async def fetch_jobs(headless: bool = False) -> List[Dict]:
                 print(f"[engine_us] Error getting page text: {e}")
                 full_text = ""
 
+            try:
+                title = await page.title()
+            except Exception:
+                title = "unknown"
+            print(f"[engine_us] Page title: {title}")
+            print(f"[engine_us] Page text length: {len(full_text)}")
+            print("[engine_us] Page text sample (first 800 chars):")
+            print(full_text[:800])
+
             jobs = _parse_jobs_from_text(full_text)
             print(f"[engine_us] Parsed {len(jobs)} job(s) from text.")
-            if not jobs:
-                try:
-                    title = await page.title()
-                except Exception:
-                    title = "unknown"
-                print(f"[engine_us] Page title: {title}")
-                print("[engine_us] Sample page text (first 800 chars):")
-                print(full_text[:800])
 
             for job in jobs:
                 try:

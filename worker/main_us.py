@@ -11,6 +11,7 @@ from dotenv import load_dotenv
 from app.area_groups import AREA_GROUPS
 from core.database import (
     get_active_subscriptions,
+    get_all_jobs,
     get_new_jobs,
     init_db,
     create_alert_deliveries,
@@ -173,17 +174,22 @@ async def run_once() -> int:
                 "url": "https://example.com/usjob2",
             },
         ]
-        new_jobs = jobs
+        candidates = jobs
         log.info("TEST_MODE: using fake jobs", extra={"count": len(jobs)})
     else:
         jobs = await fetch_jobs(headless=True)
         new_jobs = get_new_jobs(jobs)
-        # log.info("Fetched jobs", extra={"fetched": len(jobs), "new": len(new_jobs)})
-        log.info("Fetched jobs: fetched=%d new=%d db=%s", len(jobs), len(new_jobs), os.getenv("DATABASE_PATH"))
+        candidates = get_all_jobs(limit=200)
+        log.info(
+            "Fetched jobs: fetched=%d new=%d db_jobs=%d db=%s",
+            len(jobs),
+            len(new_jobs),
+            len(candidates),
+            os.getenv("DATABASE_PATH"),
+        )
 
-
-    if not new_jobs:
-        log.info("No new jobs this cycle.")
+    if not candidates:
+        log.info("No jobs available to match this cycle.")
         return 0
 
     subs = get_active_subscriptions()
@@ -195,7 +201,7 @@ async def run_once() -> int:
     alerts_for_email: Dict[str, List[tuple[int, Dict]]] = {}
     seen_key_for_email: Dict[str, set[str]] = {}
 
-    for job in new_jobs:
+    for job in candidates:
         for sub in subs:
             email = (sub.get("email") or "").strip().lower()
             if not email or "@" not in email:
@@ -222,20 +228,35 @@ async def run_once() -> int:
             continue
         user_id = int(user["id"])
 
-        # Create delivery history rows (best-effort). Group by subscription_id.
-        sub_to_job_ids: Dict[int, List[int]] = {}
+        # Create delivery history rows (best-effort). Only send jobs not previously delivered.
+        sub_to_jobs: Dict[int, List[Dict]] = {}
         for sub_id, job in items:
-            job_id = job.get("id")
-            if not job_id:
+            sub_to_jobs.setdefault(sub_id, []).append(job)
+
+        sub_to_job_ids: Dict[int, List[int]] = {}
+        filtered_items: List[tuple[int, Dict]] = []
+        for sub_id, jobs_for_sub in sub_to_jobs.items():
+            job_ids = [int(job.get("id")) for job in jobs_for_sub if job.get("id")]
+            if not job_ids:
                 continue
-            sub_to_job_ids.setdefault(sub_id, []).append(int(job_id))
-        for sub_id, job_ids in sub_to_job_ids.items():
-            create_alert_deliveries(user_id=user_id, subscription_id=sub_id, job_ids=job_ids)
+            inserted_job_ids = create_alert_deliveries(
+                user_id=user_id, subscription_id=sub_id, job_ids=job_ids
+            )
+            if not inserted_job_ids:
+                continue
+            inserted_set = set(inserted_job_ids)
+            sub_to_job_ids[sub_id] = list(inserted_set)
+            for job in jobs_for_sub:
+                if job.get("id") in inserted_set:
+                    filtered_items.append((sub_id, job))
+
+        if not filtered_items:
+            continue
 
         lines: List[str] = []
-        lines.append(f"{len(items)} new job(s) found for your preferences.\n")
+        lines.append(f"{len(filtered_items)} job(s) found for your preferences.\n")
 
-        for idx, (_sub_id, job) in enumerate(items, start=1):
+        for idx, (_sub_id, job) in enumerate(filtered_items, start=1):
             lines.append(f"Job {idx}")
             lines.append(f"Title: {job.get('title')}")
             if job.get("type"):
