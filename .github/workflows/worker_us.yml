@@ -20,22 +20,27 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -r requirements.txt
           python -m playwright install chromium
+      - name: Set up flyctl (for Postgres proxy)
+        uses: superfly/flyctl-actions/setup-flyctl@master
+      - name: Start Fly Postgres proxy
+        run: |
+          flyctl proxy 5432 -a swift-hire-db &
+          sleep 3
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
       - name: Run US worker once
         run: |
           python -m worker.main_us
         env:
           TEST_MODE: "false"
           PLAYWRIGHT_HEADLESS: "true"
-          env:
-
-          ADMIN_EMAIL: ${{secrets.ADMIN_EMAIL}}
-          ADMIN_PASSWORD: ${{secrets.ADMIN_PASSWORD}}
+          ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
           EMAIL_USER: ${{ secrets.EMAIL_USER }}
           EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
           EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
           SMTP_SERVER: ${{ secrets.SMTP_SERVER }}
           SMTP_PORT: ${{ secrets.SMTP_PORT }}
-          DATABASE_PATH: ${{ secrets.DATABASE_PATH }}  
-          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
 

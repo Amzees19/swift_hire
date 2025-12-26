@@ -1,0 +1,41 @@
+Stage 4 — Update Code to Support Postgres
+Goal: DB layer uses DATABASE_URL when present.
+
+If DATABASE_URL exists, use psycopg/asyncpg (Postgres).
+If not present, fallback to SQLite (local/dev).
+Update DB connection helper to read DATABASE_URL.
+Checkpoint 4:
+
+Stage 4a — Reset DB password + set DATABASE_URL (Fly + GitHub)
+Goal: Make DATABASE_URL valid and consistent everywhere.
+
+1) Reset the Postgres user password (Fly CLI -> psql):
+   flyctl postgres connect -a swift-hire-db
+   -- in psql:
+   ALTER USER swift_hire WITH PASSWORD 'NEW_STRONG_PASSWORD';
+   \q
+
+2) Update Fly app secret:
+   flyctl secrets set -a swift-hire DATABASE_URL="postgres://swift_hire:NEW_STRONG_PASSWORD@swift-hire-db.flycast:5432/swift_hire?sslmode=disable"
+
+3) Update GitHub Actions secret (same value as above):
+   DATABASE_URL = postgres://swift_hire:NEW_STRONG_PASSWORD@swift-hire-db.flycast:5432/swift_hire?sslmode=disable
+
+Checkpoint 4a:
+  - flyctl secrets list -a swift-hire shows DATABASE_URL.
+  - App can connect to Postgres using DATABASE_URL.
+
+Stage 4b — Run tests locally against Fly Postgres
+Goal: Local pytest uses DATABASE_URL through Fly proxy.
+
+1) Start Fly proxy in a separate terminal:
+   flyctl proxy 5432 -a swift-hire-db
+
+2) In your local PowerShell terminal:
+   $env:DATABASE_URL="postgres://swift_hire:NEW_STRONG_PASSWORD@127.0.0.1:5432/swift_hire?sslmode=disable"
+   python -m pytest
+
+Notes:
+  - Do NOT run pytest inside the Fly SSH shell; that shell does not have pytest installed.
+  - If you see "/usr/local/bin/python: No module named pytest", you're running inside the Fly container.
+  - Always set DATABASE_URL in PowerShell before pytest.

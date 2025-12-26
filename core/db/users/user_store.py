@@ -26,7 +26,7 @@ def create_user(email: str, raw_password: str, role: str = "user", verified: boo
     cur.execute(
         """
         INSERT INTO users (email, password_hash, role, created_at, email_verified_at)
-        VALUES (?, ?, ?, ?, ?)
+        VALUES (%s, %s, %s, %s, %s)
         RETURNING id
         """,
         (email.strip().lower(), password_hash, role, now, email_verified_at),
@@ -47,7 +47,7 @@ def get_user_by_email(email: str) -> Dict | None:
         """
         SELECT id, email, password_hash, role, active, created_at, email_verified_at
         FROM users
-        WHERE email = ?
+        WHERE email = %s
         """,
         (email.strip().lower(),),
     )
@@ -66,7 +66,7 @@ def get_user_by_id(user_id: int) -> Optional[Dict]:
         """
         SELECT id, email, password_hash, role, active, created_at, email_verified_at
         FROM users
-        WHERE id = ?
+        WHERE id = %s
         """,
         (user_id,),
     )
@@ -80,7 +80,7 @@ def update_user_password(user_id: int, raw_password: str) -> None:
     conn = get_conn()
     cur = conn.cursor()
     cur.execute(
-        "UPDATE users SET password_hash=? WHERE id=?",
+        "UPDATE users SET password_hash=%s WHERE id=%s",
         (hash_password(raw_password), user_id),
     )
     conn.commit()
@@ -91,20 +91,20 @@ def deactivate_user(user_id: int) -> None:
     """Deactivate a user and all their subscriptions."""
     conn = get_conn()
     cur = conn.cursor()
-    cur.execute("SELECT email FROM users WHERE id=?", (user_id,))
+    cur.execute("SELECT email FROM users WHERE id=%s", (user_id,))
     row = cur.fetchone()
     email = row["email"] if row else None
     now = datetime.utcnow().isoformat(timespec="seconds")
 
-    cur.execute("UPDATE users SET active=0 WHERE id=?", (user_id,))
+    cur.execute("UPDATE users SET active=0 WHERE id=%s", (user_id,))
     if email:
         cur.execute(
             """
             UPDATE subscriptions
             SET active=0,
-                last_deactivated_at=?,
+                last_deactivated_at=%s,
                 needs_pref_update=0
-            WHERE user_id=? OR email=?
+            WHERE user_id=%s OR email=%s
             """,
             (now, user_id, email),
         )
@@ -129,7 +129,7 @@ def reactivate_user(user_id: int) -> None:
                 cur.execute(
                     """
                     INSERT INTO activation_events (activation_code, user_id, subscription_id, activated_at)
-                    VALUES (?, ?, ?, ?)
+                    VALUES (%s, %s, %s, %s)
                     """,
                     (code, user_id, sub_id, now),
                 )
@@ -142,17 +142,17 @@ def reactivate_user(user_id: int) -> None:
 
     conn = get_conn()
     cur = conn.cursor()
-    cur.execute("SELECT email FROM users WHERE id=?", (user_id,))
+    cur.execute("SELECT email FROM users WHERE id=%s", (user_id,))
     row = cur.fetchone()
     email = row["email"] if row else None
     now = datetime.utcnow().isoformat(timespec="seconds")
 
-    cur.execute("UPDATE users SET active=1 WHERE id=?", (user_id,))
+    cur.execute("UPDATE users SET active=1 WHERE id=%s", (user_id,))
     if email:
         cur.execute(
             """
             SELECT id FROM subscriptions
-            WHERE email = ? AND active = 0
+            WHERE email = %s AND active = 0
             ORDER BY last_deactivated_at DESC, id DESC
             LIMIT 1
             """,
@@ -166,7 +166,7 @@ def reactivate_user(user_id: int) -> None:
                 UPDATE subscriptions
                 SET active=1,
                     needs_pref_update=1
-                WHERE id=?
+                WHERE id=%s
                 """,
                 (sub_id,),
             )
@@ -183,28 +183,28 @@ def delete_user_data(user_id: int) -> None:
     conn = get_conn()
     cur = conn.cursor()
 
-    cur.execute("SELECT email FROM users WHERE id=?", (user_id,))
+    cur.execute("SELECT email FROM users WHERE id=%s", (user_id,))
     row = cur.fetchone()
     email = row["email"] if row else None
 
     try:
-        cur.execute("DELETE FROM alert_deliveries WHERE user_id=?", (user_id,))
+        cur.execute("DELETE FROM alert_deliveries WHERE user_id=%s", (user_id,))
     except Exception:
         pass
 
-    cur.execute("DELETE FROM password_reset_tokens WHERE user_id=?", (user_id,))
+    cur.execute("DELETE FROM password_reset_tokens WHERE user_id=%s", (user_id,))
     try:
-        cur.execute("DELETE FROM email_verification_tokens WHERE user_id=?", (user_id,))
+        cur.execute("DELETE FROM email_verification_tokens WHERE user_id=%s", (user_id,))
     except Exception:
         pass
-    cur.execute("DELETE FROM sessions WHERE user_id=?", (user_id,))
+    cur.execute("DELETE FROM sessions WHERE user_id=%s", (user_id,))
     if email:
-        cur.execute("DELETE FROM subscriptions WHERE user_id=? OR lower(email)=lower(?)", (user_id, email))
+        cur.execute("DELETE FROM subscriptions WHERE user_id=%s OR lower(email)=lower(%s)", (user_id, email))
         try:
-            cur.execute("DELETE FROM activation_events WHERE user_id=?", (user_id,))
+            cur.execute("DELETE FROM activation_events WHERE user_id=%s", (user_id,))
         except Exception:
             pass
-    cur.execute("DELETE FROM users WHERE id=?", (user_id,))
+    cur.execute("DELETE FROM users WHERE id=%s", (user_id,))
 
     conn.commit()
     conn.close()
@@ -219,7 +219,7 @@ def get_deleted_users(limit: int = 100):
             SELECT id, user_id, email, role, created_at, deleted_at
             FROM deleted_users
             ORDER BY deleted_at DESC, id DESC
-            LIMIT ?
+            LIMIT %s
             """,
             (int(limit),),
         )

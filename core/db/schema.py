@@ -252,7 +252,7 @@ def seed_default_locations() -> None:
         cur.execute(
             """
             INSERT INTO locations (code, name, region, country, active)
-            VALUES (?, ?, ?, ?, 1)
+            VALUES (%s, %s, %s, %s, 1)
             ON CONFLICT (name, region, code) DO NOTHING
             """,
             (
@@ -286,15 +286,15 @@ def ensure_admin_from_env() -> None:
         cur = conn.cursor()
         if existing.get("role") != "admin":
             cur.execute(
-                "UPDATE users SET role='admin' WHERE email = ?",
+                "UPDATE users SET role='admin' WHERE email = %s",
                 (admin_email.strip().lower(),),
             )
         cur.execute(
-            "UPDATE users SET password_hash=? WHERE email=?",
+            "UPDATE users SET password_hash=%s WHERE email=%s",
             (hash_password(admin_password), admin_email.strip().lower()),
         )
         cur.execute(
-            "UPDATE users SET email_verified_at = ? WHERE email = ? AND (email_verified_at IS NULL OR email_verified_at = '')",
+            "UPDATE users SET email_verified_at = %s WHERE email = %s AND (email_verified_at IS NULL OR email_verified_at = '')",
             (now, admin_email.strip().lower()),
         )
         conn.commit()
