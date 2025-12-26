@@ -58,6 +58,10 @@ class _CursorWrapper:
         return iter(self._cursor)
 
     @property
+    def rowcount(self):
+        return getattr(self._cursor, "rowcount", 0)
+
+    @property
     def lastrowid(self):
         return getattr(self._cursor, "lastrowid", None)
 
