@@ -288,7 +288,7 @@ async def run_once() -> int:
             for sub_id, job_ids in sub_to_job_ids.items():
                 mark_alert_deliveries_sent(subscription_id=sub_id, job_ids=job_ids)
         except Exception as e:
-            log.error("Failed to send email", extra={"to": email, "error": str(e)})
+            log.error("Failed to send email to %s: %s", email, e)
             for sub_id, job_ids in sub_to_job_ids.items():
                 mark_alert_deliveries_failed(subscription_id=sub_id, job_ids=job_ids, error=str(e))
 
