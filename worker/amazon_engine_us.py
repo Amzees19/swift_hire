@@ -129,13 +129,13 @@ async def fetch_jobs(headless: bool = False) -> List[Dict]:
             )
             page = await context.new_page()
 
-            print("[engine_us] Loading page...")
+            print("[engine_us] Loading page...", flush=True)
             response = await page.goto(SEARCH_URL, wait_until="domcontentloaded")
             try:
                 status = response.status if response else "no-response"
             except Exception:
                 status = "unknown"
-            print(f"[engine_us] Page status: {status}")
+            print(f"[engine_us] Page status: {status}", flush=True)
 
             try:
                 await page.wait_for_timeout(3000)
@@ -155,12 +155,12 @@ async def fetch_jobs(headless: bool = False) -> List[Dict]:
                                 ]
                             ):
                                 await btn.click()
-                                print(f"[engine_us] Clicked cookie banner button: {text}")
+                                print(f"[engine_us] Clicked cookie banner button: {text}", flush=True)
                                 break
                         except Exception:
                             continue
             except Exception as e:
-                print(f"[engine_us] Cookie banner handling error: {e}")
+                print(f"[engine_us] Cookie banner handling error: {e}", flush=True)
 
             # Wait a bit longer for dynamic content to render
             try:
@@ -177,12 +177,12 @@ async def fetch_jobs(headless: bool = False) -> List[Dict]:
                         text = (await btn.inner_text()).strip().lower()
                         if "close sticky alerts" in text:
                             await btn.click(force=True)
-                            print("[engine_us] Closed sticky alerts popup.")
+                            print("[engine_us] Closed sticky alerts popup.", flush=True)
                             break
                     except Exception:
                         continue
             except Exception as e:
-                print(f"[engine_us] Sticky alert handling error: {e}")
+                print(f"[engine_us] Sticky alert handling error: {e}", flush=True)
 
             try:
                 await page.wait_for_timeout(2000)
@@ -194,40 +194,40 @@ async def fetch_jobs(headless: bool = False) -> List[Dict]:
                     modals.forEach(m => m.remove());
                     """
                 )
-                print("[engine_us] Removed job alert / step modal via JavaScript.")
+                print("[engine_us] Removed job alert / step modal via JavaScript.", flush=True)
             except Exception as e:
-                print(f"[engine_us] Failed to remove job alert modal: {e}")
+                print(f"[engine_us] Failed to remove job alert modal: {e}", flush=True)
 
             try:
                 await page.wait_for_timeout(4000)
                 await page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
                 await page.wait_for_timeout(1500)
             except Exception as e:
-                print(f"[engine_us] Error during scroll/render: {e}")
+                print(f"[engine_us] Error during scroll/render: {e}", flush=True)
 
             try:
                 full_text = await _get_all_text(page)
             except Exception as e:
-                print(f"[engine_us] Error getting page text: {e}")
+                print(f"[engine_us] Error getting page text: {e}", flush=True)
                 full_text = ""
 
             try:
                 title = await page.title()
             except Exception:
                 title = "unknown"
-            print(f"[engine_us] Page title: {title}")
-            print(f"[engine_us] Page text length: {len(full_text)}")
-            print("[engine_us] Page text sample (first 800 chars):")
-            print(full_text[:800])
+            print(f"[engine_us] Page title: {title}", flush=True)
+            print(f"[engine_us] Page text length: {len(full_text)}", flush=True)
+            print("[engine_us] Page text sample (first 800 chars):", flush=True)
+            print(full_text[:800], flush=True)
 
             jobs = _parse_jobs_from_text(full_text)
-            print(f"[engine_us] Parsed {len(jobs)} job(s) from text.")
+            print(f"[engine_us] Parsed {len(jobs)} job(s) from text.", flush=True)
 
             for job in jobs:
                 try:
                     url = await _find_job_url(page, job["title"])
                 except Exception as e:
-                    print(f"[engine_us] Error finding URL for {job['title']}: {e}")
+                    print(f"[engine_us] Error finding URL for {job['title']}: {e}", flush=True)
                     url = None
                 job["url"] = url or SEARCH_URL
 
@@ -235,5 +235,5 @@ async def fetch_jobs(headless: bool = False) -> List[Dict]:
             return jobs
 
     except Exception as e:
-        print(f"[engine_us] Fatal error in fetch_jobs (returning 0 jobs): {e}")
+        print(f"[engine_us] Fatal error in fetch_jobs (returning 0 jobs): {e}", flush=True)
         return []

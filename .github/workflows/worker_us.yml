@@ -32,6 +32,7 @@ jobs:
         run: |
           python -m worker.main_us
         env:
+          PYTHONUNBUFFERED: "1"
           TEST_MODE: "false"
           PLAYWRIGHT_HEADLESS: "true"
           ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
